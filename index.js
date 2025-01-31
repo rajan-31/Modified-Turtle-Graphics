@@ -1,116 +1,160 @@
-var canvas = document.getElementById("c");
-var gl = canvas.getContext("webgl");
+// Get the canvas element and GL context
+const canvas = document.createElement('canvas');
+canvas.width = 800;
+canvas.height = 600;
+document.body.appendChild(canvas);
+const gl = canvas.getContext('webgl');
 
+// Create info display
+const infoDiv = document.createElement('div');
+document.body.appendChild(infoDiv);
 
-function createShader(gl, type, source) {
-    var shader = gl.createShader(type);
+// Vertex shader
+const vsSource = `
+    attribute vec2 position;
+    uniform vec2 translation;
+    uniform float rotation;
+    
+    void main() {
+        float cosR = cos(rotation);
+        float sinR = sin(rotation);
+        mat2 rotationMatrix = mat2(cosR, -sinR, sinR, cosR);
+        vec2 rotatedPos = rotationMatrix * position;
+        vec2 finalPos = rotatedPos + translation;
+        gl_Position = vec4(finalPos * 2.0 - 1.0, 0.0, 1.0);
+    }
+`;
+
+// Fragment shader
+const fsSource = `
+    precision mediump float;
+    
+    void main() {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+`;
+
+// Compile shader
+function compileShader(source, type) {
+    const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (success) {
-      return shader;
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
     }
-   
-    console.log(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
+    return shader;
 }
 
+// Create program
+const vertexShader = compileShader(vsSource, gl.VERTEX_SHADER);
+const fragmentShader = compileShader(fsSource, gl.FRAGMENT_SHADER);
+const program = gl.createProgram();
+gl.attachShader(program, vertexShader);
+gl.attachShader(program, fragmentShader);
+gl.linkProgram(program);
 
-var vertexShaderSource = document.querySelector("#vertex-shader-2d").text;
-var fragmentShaderSource = document.querySelector("#fragment-shader-2d").text;
- 
-var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Program link error:', gl.getProgramInfoLog(program));
+}
 
+// Arrow vertices (hollow arrow pointing right)
+const arrowVertices = new Float32Array([
+    // Main body
+    0.0, 0.02,   // top-left
+    0.1, 0.02,   // top-right
+    0.1, -0.02,  // bottom-right
+    0.0, -0.02,  // bottom-left
 
-function createProgram(gl, vertexShader, fragmentShader) {
-    var program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (success) {
-      return program;
+    // Arrow head
+    0.1, 0.04,   // top
+    0.15, 0.0,   // tip
+    0.1, -0.04   // bottom
+]);
+
+// Create vertex buffer
+const vertexBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, arrowVertices, gl.STATIC_DRAW);
+
+// Get attribute and uniform locations
+const positionLocation = gl.getAttribLocation(program, 'position');
+const translationLocation = gl.getUniformLocation(program, 'translation');
+const rotationLocation = gl.getUniformLocation(program, 'rotation');
+
+// Initialize state
+let mode = 'rotate';  // 'rotate' or 'move'
+let angle = 0;        // in radians
+let moveDistance = 50;
+let position = { x: 0.5, y: 0.5 }; // center of screen
+
+// Update info display
+function updateInfo() {
+    infoDiv.innerHTML = `
+        Mode: ${mode}<br>
+        Angle: ${(angle * 180 / Math.PI).toFixed(1)}°<br>
+        Move Distance: ${moveDistance}px<br>
+        Position: (${(position.x * canvas.width).toFixed(1)}, ${(position.y * canvas.height).toFixed(1)})
+    `;
+}
+
+// Draw function
+function draw() {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(program);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    gl.uniform2f(translationLocation, position.x, position.y);
+    gl.uniform1f(rotationLocation, angle);
+
+    // Draw the arrow body (4 vertices)
+    gl.drawArrays(gl.LINE_LOOP, 0, 4);
+    // Draw the arrow head (3 vertices)
+    gl.drawArrays(gl.LINE_LOOP, 4, 3);
+
+    updateInfo();
+}
+
+// Handle keyboard input
+document.addEventListener('keydown', (event) => {
+    switch(event.key.toLowerCase()) {
+        case 'r':
+            mode = 'rotate';
+            break;
+        case 'f':
+            mode = 'move';
+            break;
+        case 'arrowup':
+            if (mode === 'rotate') {
+                angle += 10 * Math.PI / 180;  // Add 10 degrees
+            } else {
+                moveDistance = Math.min(moveDistance + 5, 200);  // Cap at 200px
+            }
+            break;
+        case 'arrowdown':
+            if (mode === 'rotate') {
+                angle -= 10 * Math.PI / 180;  // Subtract 10 degrees
+            } else {
+                moveDistance = Math.max(moveDistance - 5, 0);  // Minimum 0px
+            }
+            break;
+        case ' ':  // Spacebar to move forward
+            if (mode === 'move') {
+                const dx = Math.cos(angle) * (moveDistance / canvas.width);
+                const dy = Math.sin(angle) * (moveDistance / canvas.height);
+                position.x = Math.max(0, Math.min(1, position.x + dx));
+                position.y = Math.max(0, Math.min(1, position.y + dy));
+            }
+            break;
     }
-   
-    console.log(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-}
+    draw();
+});
 
-var program = createProgram(gl, vertexShader, fragmentShader);
-
-
-var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-
-
-var positionBuffer = gl.createBuffer();
-
-
-gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-
-// three 2d points
-var positions = [
-    0, 0,
-    0, 0.5,
-    0.7, 0,
-];
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-
-// RENDERING
-
-/**
- * Resize a canvas to match the size its displayed.
- * @param {HTMLCanvasElement} canvas The canvas to resize.
- * @param {number} [multiplier] amount to multiply by.
- *    Pass in window.devicePixelRatio for native pixels.
- * @return {boolean} true if the canvas was resized.
- * @memberOf module:webgl-utils
- */
-function resizeCanvasToDisplaySize(canvas, multiplier) {
-multiplier = multiplier || 1;
-const width  = canvas.clientWidth  * multiplier | 0;
-const height = canvas.clientHeight * multiplier | 0;
-if (canvas.width !== width ||  canvas.height !== height) {
-    canvas.width  = width;
-    canvas.height = height;
-    return true;
-}
-return false;
-}
-resizeCanvasToDisplaySize(gl.canvas);
-
-gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-
-// Clear the canvas
-gl.clearColor(0, 0, 0, 0);
-gl.clear(gl.COLOR_BUFFER_BIT);
-
-
-// Tell it to use our program (pair of shaders)
-gl.useProgram(program);
-
-
-gl.enableVertexAttribArray(positionAttributeLocation);
-
-
-// Bind the position buffer.
-gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
- 
-// Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-var size = 2;          // 2 components per iteration
-var type = gl.FLOAT;   // the data is 32bit floats
-var normalize = false; // don't normalize the data
-var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-var offset = 0;        // start at the beginning of the buffer
-gl.vertexAttribPointer(
-    positionAttributeLocation, size, type, normalize, stride, offset);
-
-
-var primitiveType = gl.TRIANGLES;
-var offset = 0;
-var count = 3;
-gl.drawArrays(primitiveType, offset, count);
-
+// Initial draw
+draw();
