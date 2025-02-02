@@ -1,160 +1,293 @@
-// Get the canvas element and GL context
-const canvas = document.createElement('canvas');
-canvas.width = 800;
-canvas.height = 600;
-document.body.appendChild(canvas);
-const gl = canvas.getContext('webgl');
+const canvas = document.getElementById("canvas");
+const gl = canvas.getContext("webgl");
 
-// Create info display
-const infoDiv = document.createElement('div');
-document.body.appendChild(infoDiv);
+if (!gl) {
+    alert("WebGL not supported");
+}
 
-// Vertex shader
-const vsSource = `
-    attribute vec2 position;
-    uniform vec2 translation;
-    uniform float rotation;
-    
-    void main() {
-        float cosR = cos(rotation);
-        float sinR = sin(rotation);
-        mat2 rotationMatrix = mat2(cosR, -sinR, sinR, cosR);
-        vec2 rotatedPos = rotationMatrix * position;
-        vec2 finalPos = rotatedPos + translation;
-        gl_Position = vec4(finalPos * 2.0 - 1.0, 0.0, 1.0);
-    }
-`;
+// Vertex Shader: Converts pixel coordinates to NDC
+const vertexShaderSource = `
+        attribute vec2 a_position;
+        uniform vec2 u_resolution;
+        void main() {
+            vec2 ndc = (a_position / u_resolution) * 2.0 - 1.0;
+            gl_Position = vec4(ndc.x, ndc.y, 0.0, 1.0);
+            gl_PointSize = 10.0;
+        }
+    `;
 
-// Fragment shader
-const fsSource = `
-    precision mediump float;
-    
-    void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-`;
+// Fragment Shader: Uses uniform color
+const fragmentShaderSource = `
+        precision mediump float;
+        uniform vec4 u_color;
+        void main() {
+            gl_FragColor = u_color;
+        }
+    `;
 
-// Compile shader
-function compileShader(source, type) {
+function compileShader(gl, source, type) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
         return null;
     }
     return shader;
 }
 
-// Create program
-const vertexShader = compileShader(vsSource, gl.VERTEX_SHADER);
-const fragmentShader = compileShader(fsSource, gl.FRAGMENT_SHADER);
+const vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
+const fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+
+// Create and link shader program
 const program = gl.createProgram();
 gl.attachShader(program, vertexShader);
 gl.attachShader(program, fragmentShader);
 gl.linkProgram(program);
+gl.useProgram(program);
 
-if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error('Program link error:', gl.getProgramInfoLog(program));
-}
+// Get uniform locations
+const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
+const colorLocation = gl.getUniformLocation(program, "u_color");
 
-// Arrow vertices (hollow arrow pointing right)
-const arrowVertices = new Float32Array([
-    // Main body
-    0.0, 0.02,   // top-left
-    0.1, 0.02,   // top-right
-    0.1, -0.02,  // bottom-right
-    0.0, -0.02,  // bottom-left
+// Pass canvas size to shader
+gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
 
-    // Arrow head
-    0.1, 0.04,   // top
-    0.15, 0.0,   // tip
-    0.1, -0.04   // bottom
-]);
+// Create and bind vertex buffer
+const buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
-// Create vertex buffer
-const vertexBuffer = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-gl.bufferData(gl.ARRAY_BUFFER, arrowVertices, gl.STATIC_DRAW);
+// Get attribute location and enable it
+const positionLocation = gl.getAttribLocation(program, "a_position");
+gl.enableVertexAttribArray(positionLocation);
+gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-// Get attribute and uniform locations
-const positionLocation = gl.getAttribLocation(program, 'position');
-const translationLocation = gl.getUniformLocation(program, 'translation');
-const rotationLocation = gl.getUniformLocation(program, 'rotation');
-
-// Initialize state
-let mode = 'rotate';  // 'rotate' or 'move'
-let angle = 0;        // in radians
-let moveDistance = 50;
-let position = { x: 0.5, y: 0.5 }; // center of screen
-
-// Update info display
-function updateInfo() {
-    infoDiv.innerHTML = `
-        Mode: ${mode}<br>
-        Angle: ${(angle * 180 / Math.PI).toFixed(1)}°<br>
-        Move Distance: ${moveDistance}px<br>
-        Position: (${(position.x * canvas.width).toFixed(1)}, ${(position.y * canvas.height).toFixed(1)})
-    `;
-}
-
-// Draw function
-function draw() {
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.useProgram(program);
-    gl.enableVertexAttribArray(positionLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    gl.uniform2f(translationLocation, position.x, position.y);
-    gl.uniform1f(rotationLocation, angle);
-
-    // Draw the arrow body (4 vertices)
-    gl.drawArrays(gl.LINE_LOOP, 0, 4);
-    // Draw the arrow head (3 vertices)
-    gl.drawArrays(gl.LINE_LOOP, 4, 3);
-
-    updateInfo();
-}
-
-// Handle keyboard input
-document.addEventListener('keydown', (event) => {
-    switch(event.key.toLowerCase()) {
-        case 'r':
-            mode = 'rotate';
-            break;
-        case 'f':
-            mode = 'move';
-            break;
-        case 'arrowup':
-            if (mode === 'rotate') {
-                angle += 10 * Math.PI / 180;  // Add 10 degrees
-            } else {
-                moveDistance = Math.min(moveDistance + 5, 200);  // Cap at 200px
-            }
-            break;
-        case 'arrowdown':
-            if (mode === 'rotate') {
-                angle -= 10 * Math.PI / 180;  // Subtract 10 degrees
-            } else {
-                moveDistance = Math.max(moveDistance - 5, 0);  // Minimum 0px
-            }
-            break;
-        case ' ':  // Spacebar to move forward
-            if (mode === 'move') {
-                const dx = Math.cos(angle) * (moveDistance / canvas.width);
-                const dy = Math.sin(angle) * (moveDistance / canvas.height);
-                position.x = Math.max(0, Math.min(1, position.x + dx));
-                position.y = Math.max(0, Math.min(1, position.y + dy));
-            }
-            break;
+function addTriangle(vertices, color) {
+    if (vertices.length !== 6) {
+        console.error("Invalid triangle vertices. Must have 6 values (x1, y1, x2, y2, x3, y3)");
+        return;
     }
-    draw();
-});
 
-// Initial draw
-draw();
+    if (color.length !== 4) {
+        console.error("Invalid color. Must have 4 values (r, g, b, a)");
+        return;
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    // Set the uniform color
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+
+    // Draw the triangle
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+
+function getTriangleCentroid(vertices) {
+    let x = (vertices[0] + vertices[2] + vertices[4]) / 3;
+    let y = (vertices[1] + vertices[3] + vertices[5]) / 3;
+    return [x, y];
+}
+
+function addTriangleWithAngle(vertices, color, angle, distance) {
+    if (vertices.length !== 6) {
+        console.error("Invalid triangle vertices. Must have 6 values (x1, y1, x2, y2, x3, y3)");
+        return;
+    }
+
+    if (color.length !== 4) {
+        console.error("Invalid color. Must have 4 values (r, g, b, a)");
+        return;
+    }
+
+    if (angle < 0 || angle > 360) {
+        console.error("Invalid angle. Must be in range 0 to 360");
+    }
+
+    // Convert angle to radians
+    let rad = (angle * Math.PI) / 180;
+    let dx = Math.cos(rad) * distance;
+    let dy = Math.sin(rad) * distance;
+
+    // Move each vertex
+    let movedVertices = vertices.map((v, i) => v + (i % 2 === 0 ? dx : dy));
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(movedVertices), gl.STATIC_DRAW);
+
+    // Set the uniform color
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+
+    // Draw the triangle
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function addTriangleWithAngleWithRotation(vertices, color, angle, distance, rotation) {
+    if (vertices.length !== 6) {
+        console.error("Invalid triangle vertices. Must have 6 values (x1, y1, x2, y2, x3, y3)");
+        return;
+    }
+
+    if (color.length !== 4) {
+        console.error("Invalid color. Must have 4 values (r, g, b, a)");
+        return;
+    }
+
+    if (angle < 0 || angle > 360) {
+        console.error("Invalid angle. Must be in range 0 to 360");
+    }
+
+    if (rotation < 0 || rotation > 360) {
+        console.error("Invalid rotation. Must be in range 0 to 360");
+    }
+
+    let [cx, cy] = getTriangleCentroid(vertices);
+
+    // Convert angle to radians
+    let rad = (angle * Math.PI) / 180;
+
+    let dx = Math.cos(rad) * distance;
+    let dy = Math.sin(rad) * distance;
+
+    // Move each vertex
+    let movedVertices = vertices.map((v, i) => v + (i % 2 === 0 ? dx : dy));
+
+    // Rotate each vertex
+    [cx, cy] = getTriangleCentroid(movedVertices);
+    rad = (rotation * Math.PI) / 180;
+
+    let rotatedVertices = [];
+    for (let i = 0; i < movedVertices.length; i += 2) {
+        let x = movedVertices[i] - cx;
+        let y = movedVertices[i + 1] - cy;
+        let newX = x * Math.cos(rad) - y * Math.sin(rad);
+        let newY = x * Math.sin(rad) + y * Math.cos(rad);
+        rotatedVertices.push(newX + cx, newY + cy);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rotatedVertices), gl.STATIC_DRAW);
+
+    // Set the uniform color
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+
+    // Draw the triangle
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function addLine(vertices, color) {
+    if (vertices.length !== 4) {
+        console.error("Invalid line vertices. Must have 4 values (x1, y1, x2, y2)");
+        return;
+    }
+    if (color.length !== 4) {
+        console.error("Invalid color. Must have 4 values (r, g, b, a)");
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+    gl.drawArrays(gl.LINES, 0, 2);
+}
+
+function getLineMidpoint(vertices) {
+    let x = (vertices[0] + vertices[2])/2;
+    let y = (vertices[1] + vertices[3])/2;
+    return [x, y];
+}
+
+function addLineWithRotation(vertices, color, rotation) {
+    if (vertices.length !== 4) {
+        console.error("Invalid line vertices. Must have 4 values (x1, y1, x2, y2)");
+        return;
+    }
+    if (color.length !== 4) {
+        console.error("Invalid color. Must have 4 values (r, g, b, a)");
+    }
+    if (rotation < 0 || rotation > 360) {
+        console.error("Invalid rotation. Must be in range 0 to 360");
+    }
+
+    [cx, cy] = getLineMidpoint(vertices);
+    let rad = (rotation * Math.PI) / 180;
+
+    let rotatedVertices = [];
+    for (let i = 0; i < vertices.length; i += 2) {
+        let x = vertices[i] - cx;
+        let y = vertices[i + 1] - cy;
+        let newX = x * Math.cos(rad) - y * Math.sin(rad);
+        let newY = x * Math.sin(rad) + y * Math.cos(rad);
+        rotatedVertices.push(newX + cx, newY + cy);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rotatedVertices), gl.STATIC_DRAW);
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+    gl.drawArrays(gl.LINES, 0, 2);
+}
+
+// Clear canvas before drawing
+gl.clearColor(0, 0, 0, 1);
+gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+addTriangle(
+    [225, 235.6, 275, 235.6, 250, 278.9], // Triangle 2 (Smaller)
+    [0.0, 1.0, 0.0, 1.0]
+);
+
+addTriangleWithAngle(
+    [225, 235.6, 275, 235.6, 250, 278.9], // Triangle 2 (Smaller)
+    [0.0, 0.0, 1.0, 1.0],
+    45,
+    200
+);
+
+addTriangleWithAngle(
+    [225, 235.6, 275, 235.6, 250, 278.9], // Triangle 2 (Smaller)
+    [0.0, 0.0, 1.0, 1.0],
+    360,
+    200
+);
+
+addTriangleWithAngleWithRotation(
+    [225, 235.6, 275, 235.6, 250, 278.9], // Triangle 2 (Smaller)
+    [0.0, 0.0, 1.0, 1.0],
+    45,
+    325,
+    75
+);
+
+// 1 to 7.375
+// console.log(gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE))
+// gl.lineWidth(6);
+
+addLine(
+    [0, 0, 500, 500],
+    [1.0, 0, 0, 1.0]
+);
+
+addLine(
+    [250, 0, 250, 500],
+    [1.0, 0, 0, 1.0]
+);
+
+addLine(
+    [0, 250, 500, 250],
+    [1.0, 0, 0, 1.0]
+);
+
+// addLineWithRotation(
+//     [0, 250, 500, 250],
+//     [1.0, 0, 0, 1.0],
+//     60
+// );
+//
+// addLineWithRotation(
+//     [0, 250, 500, 250],
+//     [1.0, 0, 0, 1.0],
+//     120
+// );
+//
+// addLineWithRotation(
+//     [0, 250, 500, 250],
+//     [1.0, 0, 0, 1.0],
+//     180
+// );
