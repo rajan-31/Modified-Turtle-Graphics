@@ -3,12 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Triangle with Pixel Coordinates</title>
-    <link rel="icon" href="data:,">
+    <title></title>
 </head>
 <body>
-<canvas id="canvas" width="500" height="500"></canvas>
+    <canvas id="canvas" width="500" height="500"></canvas>
 
-<script src="index.js"></script>
+    <div>
+        <label for="brushOn">Brush Status: </label>
+        <input type="checkbox" id="brushOn" checked onchange="toggleBrushOn()" />
+    </div>
+    <div>
+        <label for="angle">Angle: </label>
+        <input type="number" step="10" id="angle" value="90" onchange="changeAngle()">
+    </div>
+    <div>
+        <label for="displacement">Displacement: </label>
+        <input type="number" step="10" id="displacement" value="50" onchange="changeDisplacement()">
+    </div>
+    <div>
+        <button onclick="moveBrush()">Move</button>
+    </div>
+    <div style="margin-top: 20px">
+        <label for="fillColor">Fill Color: </label>
+        <input type="color" id="fillColor" value="#ff0000" onchange="changeFillColor()">
+    </div>
+    <div>
+        <label for="selectedItem">Selected Item</label>
+        <select id="selectedItem" onchange="changeSelectedItem()"></select>
+        <button onclick="fillSelectedItem()">Fill Item</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/earcut/dist/earcut.min.js"></script>
+    <script defer src="index.js"></script>
 </body>
 </html>
