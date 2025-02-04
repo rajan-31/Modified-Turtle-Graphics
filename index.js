@@ -6,7 +6,37 @@ if (!gl) {
     alert("WebGL not supported");
 }
 
+function compileShader(gl, source, type) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+    return shader;
+}
 
+// Vertex Shader: Converts pixel coordinates to NDC
+const vertexShaderSource = `
+        attribute vec2 a_position;
+        uniform vec2 u_resolution;
+        void main() {
+            vec2 ndc = (a_position / u_resolution) * 2.0 - 1.0;
+            gl_Position = vec4(ndc.x, ndc.y, 0.0, 1.0);
+            gl_PointSize = 10.0;
+        }
+    `;
+
+// Fragment Shader: Uses uniform color
+const fragmentShaderSource = `
+        precision mediump float;
+        uniform vec4 u_color;
+        void main() {
+            gl_FragColor = u_color;
+        }
+    `;
 
 const vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
 const fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
@@ -45,6 +75,11 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 // =====================================
 
 let scene = []
+let displacement = 50;
+let angle = 90;
+let brushPos = [250,250];
+let brushOn = true;
+let fillColor = "ff0000";
 
 function addTriangle(vertices, color) {
     scene.push({
@@ -54,10 +89,25 @@ function addTriangle(vertices, color) {
     });
 }
 
+function addLine(vertices, color) {
+    console.log(`(${vertices[0]}, ${vertices[1]})\n(${vertices[2]}, ${vertices[3]})`);
+    scene.push({
+        type: "line",
+        vertices: vertices,
+        color: color
+    })
+}
+
 function drawTriangle(vertices, color) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function drawLine(vertices, color) {
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+    gl.drawArrays(gl.LINES, 0, 2);
 }
 
 function drawItem(vertices, color) {
@@ -92,6 +142,11 @@ function render() {
     })
 }
 
+function clearSceneResetBrush() {
+    scene = [scene[0]];
+    brushPos = [250,250];
+}
+
 // =====================================
 
 function animation() {
@@ -109,26 +164,19 @@ renderLoop();
 
 // =====================================
 
-addTriangle(
-    [
-        245, 250,
-        255, 250,
-        250, 280],
-    [0.0, 1.0, 0.0, 1.0]
-);
-
-function changeAngle() {
-    angle = document.querySelector("#angle").value;
-    console.log(angle);
+function changeAngle(sign) {
+    angle += (45*sign); angle = angle >=0 ? angle%360 : 0;
+    document.querySelector("#angle").value = angle;
 }
 
-function changeDisplacement() {
-    displacement = document.querySelector("#displacement").value;
-    console.log(displacement);
+function changeDisplacement(sign) {
+    displacement += (50*sign); displacement = displacement > 0 ? displacement : 50;
+    document.querySelector("#displacement").value = displacement;
 }
 
 function toggleBrushOn() {
     brushOn = !brushOn;
+    document.querySelector("#brushOn").checked = brushOn;
     if(!brushOn) {
         let temp = scene.slice(1);
         temp = temp.map((l) => l.vertices);
@@ -166,41 +214,6 @@ function changeFillColor() {
     fillColor = document.querySelector("#fillColor").value.slice(1);
 }
 
-function changeSelectedItem() {
-    selectedItem = document.querySelector("#selectedItem").value;
-    console.log(selectedItem);
-}
-
-function fillSelectedItem() {
-
-}
-
-// =====================================
-
-let displacement = 50;
-let angle = 90;
-let brushPos = [250,250];
-let brushOn = true;
-let fillColor = "ff0000";
-let selectedItem = 1;
-
-function addLine(vertices, color) {
-    console.log(`(${vertices[0]}, ${vertices[1]})\n(${vertices[2]}, ${vertices[3]})`);
-    scene.push({
-        type: "line",
-        vertices: vertices,
-        color: color
-    })
-}
-
-function drawLine(vertices, color) {
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
-    gl.drawArrays(gl.LINES, 0, 2);
-}
-
-// =====================================
-
 function moveBrush() {
     const x1 = brushPos[0];
     const y1 = brushPos[1];
@@ -223,3 +236,36 @@ function moveBrush() {
     // scene[0].vertices = scene[0].vertices.map((v, i) => i%2==1 ? v+displacement : v);
     brushPos[0] = x2; brushPos[1] = y2;
 }
+
+function handleKeyPress(e) {
+    const key = e.key.toLowerCase();
+    if (key === "w") moveBrush();
+    if (key === "b") toggleBrushOn();
+    if (key === "arrowleft") changeAngle(-1);
+    if (key === "arrowright") changeAngle(1);
+    if (key === "arrowup") changeDisplacement(1);
+    if (key === "arrowdown") changeDisplacement(-1);
+
+    if (key === "c") clearSceneResetBrush();
+}
+
+// =====================================
+
+document.addEventListener("keydown", handleKeyPress);
+
+addTriangle(
+    [
+        245, 250,
+        255, 250,
+        250, 280],
+    [0.0, 1.0, 0.0, 1.0]
+);
+
+// =====================================
+
+// [..."wLLwRRRRRRwLLwb"].forEach(k=>document.dispatchEvent(new KeyboardEvent('keydown',{key:{U:'ArrowUp',D:'ArrowDown',L:'ArrowLeft',R:'ArrowRight'}[k]||k.toLowerCase()})))
+
+// [..."LLwRwRwRwRwRwRwRwb"].forEach(k=>document.dispatchEvent(new KeyboardEvent('keydown',{key:{U:'ArrowUp',D:'ArrowDown',L:'ArrowLeft',R:'ArrowRight'}[k]||k.toLowerCase()})))
+
+// self intersecting
+[..."UwDLLwRRRRRUwb"].forEach(k=>document.dispatchEvent(new KeyboardEvent('keydown',{key:{U:'ArrowUp',D:'ArrowDown',L:'ArrowLeft',R:'ArrowRight'}[k]||k.toLowerCase()})))

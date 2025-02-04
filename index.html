@@ -9,28 +9,19 @@
     <canvas id="canvas" width="500" height="500"></canvas>
 
     <div>
-        <label for="brushOn">Brush Status: </label>
-        <input type="checkbox" id="brushOn" checked onchange="toggleBrushOn()" />
-    </div>
-    <div>
-        <label for="angle">Angle: </label>
-        <input type="number" step="10" id="angle" value="90" onchange="changeAngle()">
-    </div>
-    <div>
-        <label for="displacement">Displacement: </label>
-        <input type="number" step="10" id="displacement" value="50" onchange="changeDisplacement()">
-    </div>
-    <div>
-        <button onclick="moveBrush()">Move</button>
-    </div>
-    <div style="margin-top: 20px">
-        <label for="fillColor">Fill Color: </label>
+        <input type="checkbox" id="brushOn" checked onchange="toggleBrushOn()" style="height: 20px; width:20px" />
         <input type="color" id="fillColor" value="#ff0000" onchange="changeFillColor()">
     </div>
-    <div>
-        <label for="selectedItem">Selected Item</label>
-        <select id="selectedItem" onchange="changeSelectedItem()"></select>
-        <button onclick="fillSelectedItem()">Fill Item</button>
+    <div style="margin-top: 10px;">
+        <label for="angle">Angle: </label>
+        <input type="number" step="10" id="angle" value="90" style="width: 100px"
+               onchange="angle = this.value"
+        />
+
+        <label for="displacement">Displacement: </label>
+        <input type="number" step="10" id="displacement" value="50" style="width: 100px"
+               onchange="displacement = this.value"
+        />
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/earcut/dist/earcut.min.js"></script>
