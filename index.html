@@ -14,7 +14,7 @@
     </div>
     <div style="margin-top: 10px;">
         <label for="angle">Angle: </label>
-        <input type="number" step="10" id="angle" value="90" style="width: 100px"
+        <input type="number" step="10" id="angle" value="0" style="width: 100px"
                onchange="angle = this.value"
         />
 
@@ -25,6 +25,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/earcut/dist/earcut.min.js"></script>
+    <script src="clipper_unminified.js"></script>
+    <script src="gl-matrix.js"></script>
     <script defer src="index.js"></script>
 </body>
 </html>
