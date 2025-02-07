@@ -10,21 +10,48 @@
 
     <div>
         <input type="checkbox" id="brushOn" checked onchange="toggleBrushOn()" style="height: 20px; width:20px" />
+        <input type="checkbox" id="brushVisible" checked onchange="toggleBrushVisible()" style="height: 20px; width:20px" />
         <input type="color" id="fillColor" value="#ff0000" onchange="changeFillColor()">
+
+        <label for="maxShapes">Max Shapes: </label>
+        <input type="number" id="maxShapes" min="1" value="5" style="width: 50px">
+        <button onclick="changeMaxShapes()">Update</button>
     </div>
     <div style="margin-top: 10px;">
-        <label for="angle">Angle: </label>
-        <input type="number" step="10" id="angle" value="0" style="width: 100px"
-               onchange="angle = this.value"
+        <label for="turn-angle">Turn: </label>
+        <input type="number" step="10" min="-360" max="360"
+               id="turn-angle" value="0" style="width: 50px"
         />
+        <button onclick="handleTurnClick()">Turn</button>
+        <button onclick="handleAngleResetClick()">R</button>
 
-        <label for="displacement">Displacement: </label>
-        <input type="number" step="10" id="displacement" value="50" style="width: 100px"
+        <label for="displacement">Disp: </label>
+        <input type="number" step="10" id="displacement" value="50" style="width: 50px"
                onchange="displacement = this.value"
         />
     </div>
+    <div style="margin-top: 10px;">
+        <label for="shape-index">Shape index: </label>
+        <select id="shape-index"></select>
 
-    <script src="https://cdn.jsdelivr.net/npm/earcut/dist/earcut.min.js"></script>
+        <input type="number" id="item-rotation-translation-angle" value="45" style="width: 50px">
+        <button onclick="handleRotateItemClick()">Rotate</button>
+        <input type="number" id="item-translation-distance" value="50" style="width: 50px">
+        <button onclick="handleTranslateItemClick()">Translate</button>
+        <input type="number" id="item-scale-factor" value="2" min="0.5" step="0.5" style="width: 50px">
+        <button onclick="handleScaleItemClick()">Scale</button>
+        <button onclick="handleBringToFrontItemClick()">Front</button>
+        <button onclick="handleBringToBackItemClick()">back</button>
+        <button onclick="handleRecolorClick()">Recolor</button>
+        <button onclick="handleRecolorClick(true)">No Color</button>
+    </div>
+    <div>
+        <button onclick="rotateScene()">Rotate Scene</button>
+        <button onclick="translateScene()">Translate Scene</button>
+        <button onclick="clearSceneResetBrush()">Clear Scene</button>
+    </div>
+
+    <script src="earcut.min.js"></script>
     <script src="clipper_unminified.js"></script>
     <script src="gl-matrix.js"></script>
     <script defer src="index.js"></script>
