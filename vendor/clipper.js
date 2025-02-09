@@ -83,6 +83,9 @@
 	}
 	else
 	{
+		if (typeof define === 'function' && define.amd) {
+			define(ClipperLib);
+		}
 		if (typeof (document) !== "undefined") window.ClipperLib = ClipperLib;
 		else self['ClipperLib'] = ClipperLib;
 	}
@@ -2213,15 +2216,15 @@
 	/*
   ClipperLib.IntPoint.prototype.Equals = function (obj)
   {
-    if (obj === null)
-        return false;
-    if (obj instanceof ClipperLib.IntPoint)
-    {
-        var a = Cast(obj, ClipperLib.IntPoint);
-        return (this.X == a.X) && (this.Y == a.Y);
-    }
-    else
-        return false;
+	if (obj === null)
+		return false;
+	if (obj instanceof ClipperLib.IntPoint)
+	{
+		var a = Cast(obj, ClipperLib.IntPoint);
+		return (this.X == a.X) && (this.Y == a.Y);
+	}
+	else
+		return false;
   };
 
 	*/
@@ -5445,7 +5448,7 @@
 				}
 
 				//When StrictlySimple and 'e' is being touched by another edge, then
-				//make sure both edges have a vertex here ...        
+				//make sure both edges have a vertex here ...
 				if (this.StrictlySimple)
 				{
 					var ePrev = e.PrevInAEL;

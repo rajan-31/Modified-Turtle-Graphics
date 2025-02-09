@@ -6,54 +6,48 @@
     <title></title>
 </head>
 <body>
-    <canvas id="canvas" width="500" height="500"></canvas>
 
     <div>
-        <input type="checkbox" id="brushOn" checked onchange="toggleBrushOn()" style="height: 20px; width:20px" />
-        <input type="checkbox" id="brushVisible" checked onchange="toggleBrushVisible()" style="height: 20px; width:20px" />
-        <input type="color" id="fillColor" value="#ff0000" onchange="changeFillColor()">
+        <input type="checkbox" id="brushOn" checked style="height: 20px; width:20px" />
+        <input type="checkbox" id="brushVisible" checked style="height: 20px; width:20px" />
+        <input type="color" id="fillColor" value="#ff0000" >
 
         <label for="maxShapes">Max Shapes: </label>
-        <input type="number" id="maxShapes" min="1" value="5" style="width: 50px">
-        <button onclick="changeMaxShapes()">Update</button>
+        <input type="number" id="maxShapes" min="1" value="6" style="width: 50px">
+        <button id="btn-changeMaxShapes" >Update</button>
     </div>
     <div style="margin-top: 10px;">
         <label for="turn-angle">Turn: </label>
         <input type="number" step="10" min="-360" max="360"
                id="turn-angle" value="0" style="width: 50px"
         />
-        <button onclick="handleTurnClick()">Turn</button>
-        <button onclick="handleAngleResetClick()">R</button>
+        <button id="btn-handleTurnClick" >Turn</button>
+        <button id="btn-handleAngleResetClick" >R</button>
 
         <label for="displacement">Disp: </label>
-        <input type="number" step="10" id="displacement" value="50" style="width: 50px"
-               onchange="displacement = this.value"
-        />
+        <input type="number" step="10" id="displacement" value="50" style="width: 50px"/>
     </div>
     <div style="margin-top: 10px;">
         <label for="shape-index">Shape index: </label>
         <select id="shape-index"></select>
 
         <input type="number" id="item-rotation-translation-angle" value="45" style="width: 50px">
-        <button onclick="handleRotateItemClick()">Rotate</button>
+        <button id="btn-handleRotateItemClick" >Rotate</button>
         <input type="number" id="item-translation-distance" value="50" style="width: 50px">
-        <button onclick="handleTranslateItemClick()">Translate</button>
+        <button id="btn-handleTranslateItemClick" >Translate</button>
         <input type="number" id="item-scale-factor" value="2" min="0.5" step="0.5" style="width: 50px">
-        <button onclick="handleScaleItemClick()">Scale</button>
-        <button onclick="handleBringToFrontItemClick()">Front</button>
-        <button onclick="handleBringToBackItemClick()">back</button>
-        <button onclick="handleRecolorClick()">Recolor</button>
-        <button onclick="handleRecolorClick(true)">No Color</button>
+        <button id="btn-handleScaleItemClick" >Scale</button>
+        <button id="btn-handleBringToFrontItemClick" >Front</button>
+        <button id="btn-handleBringToBackItemClick" >back</button>
+        <button id="btn-handleRecolorClick" >Recolor</button>
+        <button id="btn-handleRecolorClick-noColor" >No Color</button>
     </div>
     <div>
-        <button onclick="rotateScene()">Rotate Scene</button>
-        <button onclick="translateScene()">Translate Scene</button>
-        <button onclick="clearSceneResetBrush()">Clear Scene</button>
+        <button id="btn-rotateScene" >Rotate Scene</button>
+        <button id="btn-translateScene" >Translate Scene</button>
+        <button id="btn-clearSceneResetBrush" >Clear Scene</button>
     </div>
 
-    <script src="earcut.min.js"></script>
-    <script src="clipper_unminified.js"></script>
-    <script src="gl-matrix.js"></script>
-    <script defer src="index.js"></script>
+    <script type="module" src="./index.js"></script>
 </body>
 </html>
