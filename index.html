@@ -3,49 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Modified Turtle Graphics</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div>
-        <input type="checkbox" id="brushOn" checked style="height: 20px; width:20px" />
-        <input type="checkbox" id="brushVisible" checked style="height: 20px; width:20px" />
-        <input type="color" id="fillColor" value="#ff0000" >
+        <small>(Check instructions at the bottom of the page.)</small>
+    </div>
+    <div style="margin-top: 10px; margin-bottom: 10px;">
+        <label for="select-mode">Mode[m]: </label>
+        <select id="select-mode" onchange="this.blur()">
+            <option value="0" selected>Draw</option>
+            <option value="1">Manipulate Shapes</option>
+            <option value="2">Manipulate Scene</option>
+        </select>
 
         <label for="maxShapes">Max Shapes: </label>
         <input type="number" id="maxShapes" min="1" value="6" style="width: 50px">
         <button id="btn-changeMaxShapes" >Update</button>
     </div>
-    <div style="margin-top: 10px;">
-        <label for="turn-angle">Turn: </label>
-        <input type="number" step="10" min="-360" max="360"
-               id="turn-angle" value="0" style="width: 50px"
-        />
-        <button id="btn-handleTurnClick" >Turn</button>
-        <button id="btn-handleAngleResetClick" >R</button>
 
-        <label for="displacement">Disp: </label>
-        <input type="number" step="10" id="displacement" value="50" style="width: 50px"/>
-    </div>
-    <div style="margin-top: 10px;">
-        <label for="shape-index">Shape index: </label>
-        <select id="shape-index"></select>
+    <div class="drawing-tools">
+        <div>
+            <strong style="display: block">Drawing Tools</strong>
 
-        <input type="number" id="item-rotation-translation-angle" value="45" style="width: 50px">
-        <button id="btn-handleRotateItemClick" >Rotate</button>
-        <input type="number" id="item-translation-distance" value="50" style="width: 50px">
-        <button id="btn-handleTranslateItemClick" >Translate</button>
-        <input type="number" id="item-scale-factor" value="2" min="0.5" step="0.5" style="width: 50px">
-        <button id="btn-handleScaleItemClick" >Scale</button>
-        <button id="btn-handleBringToFrontItemClick" >Front</button>
-        <button id="btn-handleBringToBackItemClick" >back</button>
-        <button id="btn-handleRecolorClick" >Recolor</button>
-        <button id="btn-handleRecolorClick-noColor" >No Color</button>
+            <label for="brushOn">Brush On/Off[b]</label>
+            <input type="checkbox" id="brushOn" checked style="height: 20px; width:20px" />
+
+            <label for="brushVisible">Brush Visibility[v]</label>
+            <input type="checkbox" id="brushVisible" checked style="height: 20px; width:20px" />
+
+            <label for="fillColor">Fill Color</label>
+            <input type="color" id="fillColor" value="#ff0000" >
+        </div>
+        <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+            <div>
+                <label for="turn-angle">Turn Angle[← →]: </label>
+                <input type="number" step="10" min="-360" max="360" id="turn-angle" value="45" style="width: 50px"/>(°)
+                <button id="btn-handleTurnClick" >Turn</button>
+                <button id="btn-handleAngleResetClick" >Reset</button>
+            </div>
+
+            <div>
+                <label for="displacement">Displacement[↑ ↓]: </label>
+                <input type="number" step="10" id="displacement" value="50" style="width: 50px"/>(px)
+                <button id="btn-handleMoveClick">Move [w]</button>
+            </div>
+
+        </div>
     </div>
-    <div>
-        <button id="btn-rotateScene" >Rotate Scene</button>
-        <button id="btn-translateScene" >Translate Scene</button>
-        <button id="btn-clearSceneResetBrush" >Clear Scene</button>
+
+    <div class="shape-manipulation">
+        <div>
+            <strong style="display: block; margin-bottom: 5px">Shape Manipulation</strong>
+
+            <label for="shape-index">Shape index[Num Keys]: </label>
+            <select id="shape-index" onchange="this.blur()"></select>
+        </div>
+        <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+            <div>
+                <label for="item-rotation-translation-angle">Angle: </label>
+                <input type="number" id="item-rotation-translation-angle" value="45" style="width: 50px">(°)
+                <button id="btn-handleRotateItemClick" >Rotate [→]</button>
+            </div>
+
+            <div>
+                <label for="item-translation-distance">Translation(px): </label>
+                <input type="number" id="item-translation-distance" value="50" style="width: 50px">
+                <button id="btn-handleTranslateItemClick" >Translate [w]</button>
+            </div>
+        </div>
+        <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+            <div>
+                <label for="item-scale-factor">Scale factor: </label>
+                <input type="number" id="item-scale-factor" value="2" min="0.5" step="0.5" style="width: 50px">
+                <button id="btn-handleScaleItemClick" >Scale [s]</button>
+            </div>
+
+            <div>
+                <button id="btn-handleBringToFrontItemClick" >To Front [f]</button>
+                <button id="btn-handleBringToBackItemClick" >To Back [b]</button>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <small>(Select Fill Color in Drawing Tools)</small>
+            <button id="btn-handleRecolorClick" >Change Color [c]</button>
+            <button id="btn-handleRecolorClick-noColor" >Remove Color [r]</button>
+        </div>
+    </div>
+
+
+    <div style="margin-bottom: 20px" class="scene-manipulation">
+        <strong style="display: block; margin-bottom: 5px">Scene Manipulation</strong>
+
+        <button id="btn-rotateScene" >Rotate Scene [→]</button>
+        <button id="btn-translateScene" >Translate Scene [w]</button>
+        <button id="btn-clearSceneResetBrush" >Clear Scene [c]</button>
+    </div>
+
+    <div style="margin-bottom: 50px">
+        <ul>
+            <li><small>Turn off brush to fill tha new shape with fill color</small></li>
+            <li><small>Keyboard buttons assigned are written like this [keyboard key]</small></li>
+            <li><small>Mouse click selects object</small></li>
+            <li><small>Drag mouse to draw (better with starting drag on cursor)</small></li>
+        </ul>
     </div>
 
     <script type="module" src="./index.js"></script>

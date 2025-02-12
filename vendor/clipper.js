@@ -5175,7 +5175,6 @@
 			return;
 		//prepare for sorting ...
 		var e = this.m_ActiveEdges;
-		//console.log(JSON.stringify(JSON.decycle( e )));
 		this.m_SortedEdges = e;
 		while (e !== null)
 		{
@@ -5194,7 +5193,6 @@
 			{
 				var eNext = e.NextInSEL;
 				var pt = new ClipperLib.IntPoint0();
-				//console.log("e.Curr.X: " + e.Curr.X + " eNext.Curr.X" + eNext.Curr.X);
 				if (e.Curr.X > eNext.Curr.X)
 				{
 					this.IntersectPoint(e, eNext, pt);
@@ -7061,7 +7059,6 @@
 				if (solution.length > 0)
 					solution.splice(0, 1);
 			}
-			//console.log(JSON.stringify(solution));
 		}
 		else // function (polytree, delta)
 		{
