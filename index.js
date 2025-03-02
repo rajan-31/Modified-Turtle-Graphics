@@ -1,4 +1,4 @@
-import {vec2, mat3} from "./vendor/gl-matrix";
+import {vec2, mat3} from "./vendor/gl-matrix/index.js";
 import "./vendor/clipper.js";
 import "./vendor/earcut.min.js";
 
